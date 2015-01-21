@@ -3,19 +3,16 @@ var State = require('fantasy-states');
 var Tuple2 = require('fantasy-tuples').Tuple2;
 var from = require('from');
 var curry = require('curry');
-
-var res = μ.fromJS({
-	status: 200,
-	headers: {}
-});
+var extend = require('util')._extend;
 
 var set = curry(function set_(k, v) {
 	return State.modify(function(state) {
+		console.log(k,v);
 		return state.set(k, v);
 	});
 });
 
-var status = set('status');
+var status = set('statusCode');
 
 function body(s) {
 	return function() {
@@ -23,10 +20,18 @@ function body(s) {
 	}
 }
 
-function handler(req) {
-	return status(404).chain(body(from(['hello world'])));
+function responseToMap(res) {
+	return μ.Map({
+		statusCode: res.statusCode
+	});
 }
 
-var out = handler().run(res);
-console.log(out._2);
-out._1.pipe(process.stdout);
+var handle = curry(function handle_(handler, req, res) {
+	var result = handler(req).run(responseToMap(res));
+	result._1.pipe(extend(res, result._2.toJS()));
+});
+
+var http = require('http');
+http.createServer(handle(function(req) {
+	return status(418).chain(body(from(['i\'m a teapot'])));
+})).listen(8080);

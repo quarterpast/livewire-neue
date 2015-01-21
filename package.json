@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "curry": "^1.2.0",
     "fantasy-states": "git://github.com/fantasyland/fantasy-states",
     "fantasy-tuples": "0.0.1",
     "immutable": "^3.6.2"

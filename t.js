@@ -2,17 +2,20 @@ var μ = require('immutable');
 var State = require('fantasy-states');
 var Tuple2 = require('fantasy-tuples').Tuple2;
 var from = require('from');
+var curry = require('curry');
 
 var res = μ.fromJS({
 	status: 200,
 	headers: {}
 });
 
-function set(k, v) {
+var set = curry(function set_(k, v) {
 	return State.modify(function(state) {
 		return state.set(k, v);
 	});
-}
+});
+
+var status = set('status');
 
 function body(s) {
 	return function() {
@@ -21,7 +24,7 @@ function body(s) {
 }
 
 function handler(req) {
-	return set('status', 404).chain(body(from(['hello world'])));
+	return status(404).chain(body(from(['hello world'])));
 }
 
 var out = handler().run(res);

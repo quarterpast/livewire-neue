@@ -35,3 +35,11 @@ var http = require('http');
 http.createServer(handle(function(req) {
 	return status(418).chain(body(from(['i\'m a teapot'])));
 })).listen(8080);
+
+/*
+do {
+	<- status(418);
+	<- header('x-powered-by', 'caffeine');
+	body('i\'m a teapot');
+}
+*/

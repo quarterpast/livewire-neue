@@ -8,16 +8,20 @@ var res = μ.fromJS({
 	headers: {}
 });
 
-function withState(st, f) {
-	return State.modify(f).chain(function() {
-		return st;
+function set(k, v) {
+	return State.modify(function(state) {
+		return state.set(k, v);
 	});
 }
 
+function body(s) {
+	return function() {
+		return State.of(s);
+	}
+}
+
 function handler(req) {
-	return withState(State.of(from(['hello world'])), function(res) {
-		return res.set('status', 404);
-	});
+	return set('status', 404).chain(body(from(['hello world'])));
 }
 
 var out = handler().run(res);

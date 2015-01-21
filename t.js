@@ -8,12 +8,16 @@ var res = μ.fromJS({
 	headers: {}
 });
 
+function withState(st, f) {
+	return State.modify(f).chain(function() {
+		return st;
+	});
+}
+
 function handler(req) {
-	return State.of(from(['hello world'])).chain(function(st) {
-		return State(function(res) {
-			return Tuple2(st, res.set('status', 404));
-		});
-	})
+	return withState(State.of(from(['hello world'])), function(res) {
+		return res.set('status', 404);
+	});
 }
 
 var out = handler().run(res);

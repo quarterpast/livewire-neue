@@ -38,10 +38,20 @@ var handle = λ handler (req, res) -> {
 	result._1.pipe(extend(res, result._2.res.toJS()));
 };
 
+macro $ {
+	rule { $r:expr } => { λ _ -> $r }
+}
+operator (>>=) 14 left {$l, $r} => #{$l.chain(λ[$r(#)])}
+operator (>>)  14 left {$l, $r} => #{$l >>= $ $r}
+
+macro GET {
+	rule { $path:lit $hand:expr } => { [$path, method.get($ $hand)] }
+}
+
 var http = require('http');
-http.createServer(handle(
-	status(418).chain(λ -> State.of(from(['i\'m a teapot'])))
-)).listen(8080);
+http.createServer(handle(route([
+	GET '/' status(418) >> State.of(from(['i\'m a teapot']))
+]))).listen(8080);
 
 /*
 do {

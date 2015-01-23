@@ -1,4 +1,4 @@
-SJS_OPTS = -r
+SJS_OPTS = -r -m lambda-chop/macros
 
 all: index.js
 

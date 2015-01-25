@@ -46,22 +46,15 @@ var handle = λ handler (req, res) -> {
 	result._1.pipe(extendResponse(res, result._2.res));
 };
 
-macro $ {
-	rule { $r:expr } => { λ[$r] }
-}
 operator (>>=) 14 left {$l, $r} => #{$l.chain(λ[$r(#)])}
 operator (>=>) 14 left {$l, $r} => #{λ[$l(#) >>= $r]}
 operator (=>>) 14 left {$l, $r} => #{λ[$l(#) >> $r]}
-operator (>>)  14 left {$l, $r} => #{$l >>= $ $r}
+operator (>>)  14 left {$l, $r} => #{$l >>= λ[$r]}
 
-macro GET {
-	rule { $path:lit $hand:expr } => { [$path, method.get($ $hand)] }
-}
-
-operator (#) 16 right {$l, $r} => #{ λ a -> $l($r(a)) }
+operator (@) 16 right {$l, $r} => #{ λ a -> $l($r(a)) }
 
 Array.of = λ[[#]];
-var body = State.of # σ # Array.of;
+var body = State.of @ σ @ Array.of;
 var empty = λ[State.of(σ([]))]
 var notFound = λ s -> status(404) >> body(s);
 var redirect = λ code url -> status(code) >> header('location')(url) >> empty();

@@ -54,8 +54,10 @@ operator (>>)  14 left {$l, $r} => #{$l >>= λ[$r]}
 operator (@) 16 right {$l, $r} => #{ λ a -> $l($r(a)) }
 
 Array.of = λ[[#]];
-var body = State.of @ σ @ Array.of;
-var empty = λ[State.of(σ([]))]
+Array.empty = λ[[]];
+var streamBody = State.of @ σ;
+var body  = streamBody @ Array.of;
+var empty = streamBody @ Array.empty;
 var notFound = λ s -> status(404) >> body(s);
 var redirect = λ code url -> status(code) >> header('location')(url) >> empty();
 

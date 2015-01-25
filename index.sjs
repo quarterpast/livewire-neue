@@ -1,6 +1,7 @@
 /* jshint ignore: start */
 
 var μ = require('immutable');
+var σ = require('highland');
 var State = require('fantasy-states');
 var Tuple2 = require('fantasy-tuples').Tuple2;
 var from = require('from');
@@ -17,7 +18,6 @@ var getRequest  = get('req');
 
 var status = setResponse('statusCode');
 var header = λ k -> setResponse(['headers', k]);
-var body = λ s _ -> State.of(s);
 
 var responseToMap = λ res -> μ.fromJS({
 	statusCode: res.statusCode,
@@ -47,18 +47,26 @@ var handle = λ handler (req, res) -> {
 };
 
 macro $ {
-	rule { $r:expr } => { λ _ -> $r }
+	rule { $r:expr } => { λ[$r] }
 }
 operator (>>=) 14 left {$l, $r} => #{$l.chain(λ[$r(#)])}
+operator (>=>) 14 left {$l, $r} => #{λ[$l(#) >>= $r]}
+operator (=>>) 14 left {$l, $r} => #{λ[$l(#) >> $r]}
 operator (>>)  14 left {$l, $r} => #{$l >>= $ $r}
 
 macro GET {
 	rule { $path:lit $hand:expr } => { [$path, method.get($ $hand)] }
 }
 
+operator (#) 16 right {$l, $r} => #{ λ a -> $l($r(a)) }
+
+Array.of = λ[[#]];
+var body = State.of # σ # Array.of;
+var notFound = λ s -> status(404) >> body(s);
+
 var http = require('http');
 http.createServer(handle(
-	status(418) >> header('x-powered-by')('livewire') >> State.of(from(['i\'m a teapot']))
+	notFound('i\'m a teapot')
 )).listen(8080);
 
 /*

@@ -7,8 +7,8 @@ var from = require('from');
 var curry = require('curry');
 var extend = require('util')._extend;
 
-var set = λ kk k v -> State.modify(λ state -> state.set(kk, state[kk].set(k, v)));
-var get = λ kk k -> State.get.map(λ[#.get(kk).get(k)]);
+var set = λ kk k v -> State.modify(λ state -> state.setIn([kk].concat(k), v));
+var get = λ kk k -> State.get.map(λ[#.getIn([kk].concat(k))]);
 
 var setResponse = set('res');
 var getResponse = get('res');
@@ -16,10 +16,12 @@ var setRequest  = set('req');
 var getRequest  = get('req');
 
 var status = setResponse('statusCode');
+var header = λ k -> setResponse(['headers', k]);
 var body = λ s _ -> State.of(s);
 
-var responseToMap = λ res -> μ.Map({
-	statusCode: res.statusCode
+var responseToMap = λ res -> μ.fromJS({
+	statusCode: res.statusCode,
+	headers: {}
 });
 
 var LivewireState = μ.Record({
@@ -32,10 +34,16 @@ var initState = λ(req, res) -> new LivewireState({
 	req: req
 });
 
+function extendResponse(httpRes, stateRes) {
+	stateRes.get('headers').forEach(λ(v, k) -> httpRes.setHeader(k, v));
+	return extend(httpRes, stateRes.toJS());
+}
+
 var handle = λ handler (req, res) -> {
 	var state = typeof handler === 'function' ? handler() : handler;
 	var result = state.run(initState(req, res));
-	result._1.pipe(extend(res, result._2.res.toJS()));
+
+	result._1.pipe(extendResponse(res, result._2.res));
 };
 
 macro $ {
@@ -49,9 +57,9 @@ macro GET {
 }
 
 var http = require('http');
-http.createServer(handle(route([
-	GET '/' status(418) >> State.of(from(['i\'m a teapot']))
-]))).listen(8080);
+http.createServer(handle(
+	status(418) >> header('x-powered-by')('livewire') >> State.of(from(['i\'m a teapot']))
+)).listen(8080);
 
 /*
 do {

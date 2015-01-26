@@ -69,13 +69,13 @@ macro do {
 	}
 
 	rule {
-		{ var $a:ident = $b:expr; $rest ... }
+		{ var $($a:ident = $b:expr) (,) ...; $rest ... }
 	} => {
-		(function($a) {
+		(function($a ...) {
 			return do {
 				$rest ...
 			}
-		}($b))
+		}.call(this, $b (,) ...))
 	}
 
 	rule {
@@ -104,10 +104,8 @@ var notFound = λ s -> status(404) >> body(s);
 var redirect = λ code url -> status(code) >> header('location')(url) >> empty();
 
 var http = require('http');
-http.createServer(handle(
-	do {
-		<- status(418);
-		<- header('x-powered-by')('caffeine');
-		return σ(['i\'m a teapot'])
-	}
-)).listen(8080);
+http.createServer(handle(do {
+	<- status(418);
+	<- header('x-powered-by')('caffeine');
+	σ(['i\'m a teapot'])
+})).listen(8080);

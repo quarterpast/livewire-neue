@@ -51,6 +51,52 @@ operator (>=>) 14 left {$l, $r} => #{λ[$l(#) >>= $r]}
 operator (=>>) 14 left {$l, $r} => #{λ[$l(#) >> $r]}
 operator (>>)  14 left {$l, $r} => #{$l >>= λ[$r]}
 
+macro do {
+	rule {
+		{ $a:ident <- $m:expr ; $rest ... } 
+	} => {
+		$m >>= do {
+			$rest ...
+		}
+	}
+
+	rule {
+		{ <- $m:expr ; $rest ... }
+	} => {
+		$m >> do {
+			$rest ...
+		}
+	}
+
+	rule {
+		{ var $a:ident = $b:expr; $rest ... }
+	} => {
+		(function($a) {
+			return do {
+				$rest ...
+			}
+		}($b))
+	}
+
+	rule {
+		{ return $a:expr }
+	} => {
+		this.constructor.of($a)
+	}
+
+	rule {
+		{ $a ; }
+	} => {
+		do { $a }
+	}
+
+	rule {
+		{ $a:expr }
+	} => { $a }
+
+	rule {} => {}
+}
+
 operator (@) 16 right {$l, $r} => #{ λ a -> $l($r(a)) }
 
 Array.of = λ[[#]];
@@ -63,13 +109,9 @@ var redirect = λ code url -> status(code) >> header('location')(url) >> empty()
 
 var http = require('http');
 http.createServer(handle(
-	redirect(302)('/foo')
+	do {
+		<- status(418);
+		<- header('x-powered-by')('caffeine');
+		body('i\'m a teapot')
+	}
 )).listen(8080);
-
-/*
-do {
-	<- status(418);
-	<- header('x-powered-by', 'caffeine');
-	body('i\'m a teapot');
-}
-*/

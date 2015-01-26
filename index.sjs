@@ -46,7 +46,7 @@ var handle = λ handler (req, res) -> {
 	result._1.pipe(extendResponse(res, result._2.res));
 };
 
-operator (>>=) 14 left {$l, $r} => #{$l.chain(λ[$r(#)])}
+operator (>>=) 14 left {$l, $r} => #{$l.chain($r)}
 operator (>=>) 14 left {$l, $r} => #{λ[$l(#) >>= $r]}
 operator (=>>) 14 left {$l, $r} => #{λ[$l(#) >> $r]}
 operator (>>)  14 left {$l, $r} => #{$l >>= λ[$r]}
@@ -85,25 +85,21 @@ macro do {
 	}
 
 	rule {
-		{ $a ; }
+		{ $a:expr ; }
 	} => {
-		do { $a }
+		$a
 	}
 
-	rule {
-		{ $a:expr }
-	} => { $a }
-
+	rule {{}} => {}
 	rule {} => {}
 }
 
-operator (@) 16 right {$l, $r} => #{ λ a -> $l($r(a)) }
+operator (@) 16 right {$l, $r} => #{ λ[$l($r.apply(this, arguments))] }
 
 Array.of = λ[[#]];
 Array.empty = λ[[]];
-var streamBody = State.of @ σ;
-var body  = streamBody @ Array.of;
-var empty = streamBody @ Array.empty;
+var body  = σ @ Array.of;
+var empty = σ @ Array.empty;
 var notFound = λ s -> status(404) >> body(s);
 var redirect = λ code url -> status(code) >> header('location')(url) >> empty();
 
@@ -112,6 +108,6 @@ http.createServer(handle(
 	do {
 		<- status(418);
 		<- header('x-powered-by')('caffeine');
-		body('i\'m a teapot')
+		return σ(['i\'m a teapot'])
 	}
 )).listen(8080);

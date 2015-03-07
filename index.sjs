@@ -42,6 +42,7 @@ function extendResponse(httpRes, stateRes) {
 var handle = λ handler (req, res) -> {
 	var state = typeof handler === 'function' ? handler() : handler;
 	var result = state.run(initState(req, res));
+	console.log(result);
 
 	result._1.pipe(extendResponse(res, result._2.res));
 };
@@ -53,23 +54,32 @@ operator (>>)  14 left {$l, $r} => #{$l >>= λ[$r]}
 
 macro do {
 	rule {
-		{ $a:ident <- $m:expr ; $rest ... } 
-	} => {
-		$m >>= do {
+		{
+			$a:ident <- $m:expr;
 			$rest ...
-		}
+		} 
+	} => {
+		($m >>= λ $a -> do {
+			$rest ...
+		})
 	}
 
 	rule {
-		{ <- $m:expr ; $rest ... }
-	} => {
-		$m >> do {
+		{
+			<- $m:expr;
 			$rest ...
 		}
+	} => {
+		($m >> do {
+			$rest ...
+		})
 	}
 
 	rule {
-		{ var $($a:ident = $b:expr) (,) ...; $rest ... }
+		{
+			var $($a:ident = $b:expr) (,) ...;
+			$rest ...
+		}
 	} => {
 		(function($a ...) {
 			return do {
@@ -79,9 +89,15 @@ macro do {
 	}
 
 	rule {
-		{ return $a:expr }
+		{ return $a:expr; }
 	} => {
 		this.constructor.of($a)
+	}
+
+	rule {
+		{ $a:expr }
+	} => {
+		$a
 	}
 
 	rule {
@@ -107,5 +123,5 @@ var http = require('http');
 http.createServer(handle(do {
 	<- status(418);
 	<- header('x-powered-by')('caffeine');
-	σ(['i\'m a teapot'])
+	return σ(['i\'m a teapot']);
 })).listen(8080);

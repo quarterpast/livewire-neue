@@ -1,6 +1,4 @@
-SJS_OPTS = -r -m lambda-chop/macros
+all: lib/index.js
 
-all: index.js
-
-%.js: %.sjs
-	node_modules/.bin/sjs $(SJS_OPTS) -o $@ $<
+lib/%.js: src/%.js
+	node_modules/.bin/babel $(BABEL_OPTS) -o $@ $<
